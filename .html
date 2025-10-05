@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drawing Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        #canvas-container {
+            position: relative;
+            flex-grow: 1; /* Make canvas fill available space */
+        }
+        .tool-btn {
+            transition: all 0.15s ease-in-out;
+        }
+        .tool-btn:hover {
+            transform: scale(1.1);
+        }
+        .selected-tool {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+        }
+        #color-picker {
+             -webkit-appearance: none;
+             -moz-appearance: none;
+             appearance: none;
+             width: 40px;
+             height: 40px;
+             padding: 0;
+             border: none;
+             border-radius: 50%;
+             cursor: pointer;
+        }
+        #color-picker::-webkit-color-swatch {
+            border-radius: 50%;
+            border: 2px solid #e2e8f0;
+        }
+        #status-banner {
+            transition: all 0.5s ease-in-out;
+        }
+        #whiteboard-bg, #whiteboard-fg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Main Whiteboard Content -->
+    <div class="main-content w-full mx-auto flex flex-col items-center">
+        <div id="status-banner" class="w-full p-3 mb-4 text-center text-white font-semibold rounded-lg shadow-md bg-blue-500">
+            <span id="status-text">Connecting to server...</span>
+        </div>
+        
+        <!-- Toolbar & Title -->
+        <div class="w-full p-4 flex flex-wrap justify-center items-center gap-6">
+             <h1 class="text-2xl font-bold text-center text-gray-800 leading-tight">
+                <div>DRAWING</div>
+                <div>BOARD</div>
+            </h1>
+            <!-- Tools -->
+            <div class="flex items-center space-x-2 bg-white p-3 rounded-lg shadow-md">
+                <span class="font-medium text-gray-700">Tools:</span>
+                <button class="tool-btn p-2 rounded-md selected-tool" data-tool="pen" title="Pen">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </button>
+                 <button class="tool-btn p-2 rounded-md" data-tool="move" title="Move Shape">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14m-7-7-7 7 7 7m7-7-7-7 7 7"/></svg>
+                </button>
+                <button class="tool-btn p-2 rounded-md" data-tool="eraser" title="Eraser">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21H7Z"/><path d="M22 21H7"/><path d="m5 12 5 5"/></svg>
+                </button>
+            </div>
+             <!-- Color Picker -->
+            <div class="flex items-center space-x-2 bg-white p-3 rounded-lg shadow-md">
+                <span class="font-medium text-gray-700">Color:</span>
+                <input type="color" id="color-picker" value="#000000">
+            </div>
+             <!-- Shapes -->
+            <div class="flex items-center space-x-2 bg-white p-3 rounded-lg shadow-md">
+                <span class="font-medium text-gray-700">Shapes:</span>
+                 <button class="tool-btn p-2 rounded-md" data-tool="shape-square" title="Square">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+                </button>
+                <button class="tool-btn p-2 rounded-md" data-tool="shape-rectangle" title="Rectangle">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+                </button>
+                <button class="tool-btn p-2 rounded-md" data-tool="shape-circle" title="Circle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                </button>
+                <button class="tool-btn p-2 rounded-md" data-tool="shape-triangle" title="Triangle">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 22h20L12 2z"/></svg>
+                </button>
+                <button class="tool-btn p-2 rounded-md" data-tool="shape-parabola" title="Parabola">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 22q10-20 20 0"/></svg>
+                </button>
+                <button class="tool-btn p-2 rounded-md" data-tool="shape-cone" title="Cone">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 22h16L12 2z"/><path d="M4 22q8-4 16 0"/></svg>
+                </button>
+                <button class="tool-btn p-2 rounded-md" data-tool="shape-cylinder" title="Cylinder">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="4"/><path d="M4 6v12c0 2.21 3.582 4 8 4s8-1.79 8-4V6"/></svg>
+                </button>
+            </div>
+            <!-- Brush Size -->
+            <div class="flex items-center space-x-2 bg-white p-3 rounded-lg shadow-md">
+                <span class="font-medium text-gray-700">Size:</span>
+                <input type="range" id="brushSize" min="1" max="50" value="5" class="w-24">
+            </div>
+            <button id="clearButton" class="px-4 py-2 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400">Clear</button>
+        </div>
+
+        <div id="canvas-container" class="bg-white rounded-lg shadow-2xl overflow-hidden w-full">
+            <canvas id="whiteboard-bg"></canvas> <!-- For freehand drawing -->
+            <canvas id="whiteboard-fg"></canvas> <!-- For shapes and interaction -->
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="w-full bg-white shadow-inner p-4">
+        <div class="w-full mx-auto flex justify-between items-center px-4">
+            <p class="text-gray-800 font-bold">DEVELOPED BY R NITHYANANDACHARI</p>
+            <div class="flex items-center space-x-4">
+                <a href="#" target="_blank" class="text-gray-600 hover:text-blue-700" title="LinkedIn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
+                <a href="#" target="_blank" class="text-gray-600 hover:text-gray-900" title="GitHub">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const bgCanvas = document.getElementById('whiteboard-bg');
+        const fgCanvas = document.getElementById('whiteboard-fg');
+        const ctxBg = bgCanvas.getContext('2d');
+        const ctxFg = fgCanvas.getContext('2d');
+
+        const toolButtons = document.querySelectorAll('.tool-btn');
+        const colorPicker = document.getElementById('color-picker');
+        const brushSizeInput = document.getElementById('brushSize');
+        const clearButton = document.getElementById('clearButton');
+        const statusBanner = document.getElementById('status-banner');
+        const statusText = document.getElementById('status-text');
+
+        let isDrawing = false, isDragging = false;
+        let lastX = 0, lastY = 0;
+        let drawColor = '#000000', brushSize = 5;
+        let currentTool = 'pen';
+        
+        let canvasObjects = [];
+        let selectedObject = null;
+        let dragOffsetX, dragOffsetY;
+
+        let animationFrameId = null;
+
+        function resizeCanvas() {
+            const container = document.getElementById('canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            if (width <= 0 || height <= 0) return;
+
+            [bgCanvas, fgCanvas].forEach(canvas => {
+                canvas.width = width;
+                canvas.height = height;
+            });
+            redrawAll();
+        }
+        window.addEventListener('resize', resizeCanvas);
+        
+        function redrawAll() {
+            redrawFgCanvas();
+        }
+        
+        const socket = new WebSocket('ws://localhost:8080');
+
+        socket.onopen = () => {
+            console.log('WebSocket connected');
+            statusText.textContent = 'Connected!';
+            statusBanner.classList.remove('bg-blue-500', 'bg-red-500');
+            statusBanner.classList.add('bg-green-500');
+            setTimeout(() => { statusBanner.style.display = 'none'; }, 2000);
+            resizeCanvas(); 
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            switch (data.type) {
+                case 'draw':
+                    drawOnBgCanvas(data.x0, data.y0, data.x1, data.y1, data.color, data.size);
+                    break;
+                case 'shape:add':
+                    canvasObjects.push(data.payload);
+                    redrawFgCanvas();
+                    break;
+                case 'shape:update':
+                    const obj = canvasObjects.find(o => o.id === data.payload.id);
+                    if (obj) {
+                        obj.x = data.payload.x;
+                        obj.y = data.payload.y;
+                        redrawFgCanvas();
+                    }
+                    break;
+                case 'clear':
+                    clearAll();
+                    break;
+            }
+        };
+
+        socket.onerror = () => {
+            statusText.textContent = 'Connection Failed. Please ensure server is running.';
+            statusBanner.classList.remove('bg-blue-500');
+            statusBanner.classList.add('bg-red-500');
+        };
+
+        function drawOnBgCanvas(x0, y0, x1, y1, color, size) {
+            ctxBg.beginPath();
+            ctxBg.moveTo(x0, y0);
+            ctxBg.lineTo(x1, y1);
+            ctxBg.strokeStyle = color;
+            ctxBg.lineWidth = size;
+            ctxBg.lineCap = 'round';
+            ctxBg.stroke();
+            ctxBg.closePath();
+        }
+
+        function redrawFgCanvas() {
+            ctxFg.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
+            canvasObjects.forEach(obj => drawObject(obj));
+        }
+
+        function drawObject(obj) {
+            ctxFg.strokeStyle = obj.color;
+            ctxFg.lineWidth = obj.size;
+            ctxFg.beginPath();
+            const w = 100, h = 100; // General size reference
+            switch(obj.type) {
+                case 'shape-square':
+                    ctxFg.rect(obj.x - w/2, obj.y - h/2, w, h);
+                    break;
+                case 'shape-rectangle':
+                    ctxFg.rect(obj.x - (w*1.5)/2, obj.y - h/2, w*1.5, h);
+                    break;
+                case 'shape-circle':
+                    ctxFg.arc(obj.x, obj.y, w/2, 0, Math.PI * 2);
+                    break;
+                case 'shape-triangle':
+                    ctxFg.moveTo(obj.x, obj.y - h/2);
+                    ctxFg.lineTo(obj.x - w/2, obj.y + h/2);
+                    ctxFg.lineTo(obj.x + w/2, obj.y + h/2);
+                    ctxFg.closePath();
+                    break;
+                case 'shape-parabola':
+                    ctxFg.moveTo(obj.x - w, obj.y + h/2);
+                    ctxFg.quadraticCurveTo(obj.x, obj.y - h, obj.x + w, obj.y + h/2);
+                    break;
+                case 'shape-cone':
+                    ctxFg.moveTo(obj.x, obj.y - h/2);
+                    ctxFg.lineTo(obj.x - w/2, obj.y + h/2);
+                    ctxFg.quadraticCurveTo(obj.x, obj.y + h/2 + 15, obj.x + w/2, obj.y + h/2);
+                    ctxFg.closePath();
+                    break;
+                case 'shape-cylinder':
+                    const rx = w/2, ry = h/4;
+                    ctxFg.ellipse(obj.x, obj.y - h/3, rx, ry, 0, 0, Math.PI * 2);
+                    ctxFg.moveTo(obj.x - rx, obj.y - h/3);
+                    ctxFg.lineTo(obj.x - rx, obj.y + h/3);
+                    ctxFg.ellipse(obj.x, obj.y + h/3, rx, ry, 0, 0, Math.PI * 2);
+                    ctxFg.moveTo(obj.x + rx, obj.y - h/3);
+                    ctxFg.lineTo(obj.x + rx, obj.y + h/3);
+                    break;
+            }
+            ctxFg.stroke();
+        }
+
+        function handleStart(e) {
+            e.preventDefault();
+            const [x, y] = getCoordinates(e);
+
+            if (currentTool === 'pen' || currentTool === 'eraser') {
+                isDrawing = true;
+                [lastX, lastY] = [x, y];
+            } else if (currentTool === 'move') {
+                selectedObject = findObjectAt(x, y);
+                if (selectedObject) {
+                    isDragging = true;
+                    dragOffsetX = x - selectedObject.x;
+                    dragOffsetY = y - selectedObject.y;
+                    fgCanvas.style.cursor = 'grabbing';
+                }
+            } else if (currentTool.startsWith('shape-')) {
+                createShape(currentTool, x, y);
+                setActiveTool('move');
+            }
+        }
+
+        function handleMove(e) {
+            e.preventDefault();
+            const [x, y] = getCoordinates(e);
+
+            if (isDrawing) {
+                const color = (currentTool === 'eraser') ? 'white' : drawColor;
+                const size = (currentTool === 'eraser') ? brushSize * 2 : brushSize;
+                socket.send(JSON.stringify({ type: 'draw', x0: lastX, y0: lastY, x1: x, y1: y, color, size }));
+                drawOnBgCanvas(lastX, lastY, x, y, color, size);
+                [lastX, lastY] = [x, y];
+            } else if (isDragging && selectedObject) {
+                selectedObject.x = x - dragOffsetX;
+                selectedObject.y = y - dragOffsetY;
+                
+                socket.send(JSON.stringify({ type: 'shape:update', payload: { id: selectedObject.id, x: selectedObject.x, y: selectedObject.y } }));
+
+                if (!animationFrameId) {
+                    animationFrameId = requestAnimationFrame(() => {
+                        redrawFgCanvas();
+                        animationFrameId = null; 
+                    });
+                }
+            }
+        }
+        
+        function handleEnd(e) {
+            e.preventDefault();
+            if(isDragging && animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            if (currentTool === 'move') {
+                 fgCanvas.style.cursor = 'grab';
+            }
+            isDrawing = false;
+            isDragging = false;
+            selectedObject = null;
+        }
+
+        function getCoordinates(e) {
+            const rect = fgCanvas.getBoundingClientRect();
+            const touch = e.touches && e.touches[0];
+            return [ (touch || e).clientX - rect.left, (touch || e).clientY - rect.top ];
+        }
+        
+        function createShape(shapeType, x, y) {
+            const shape = {
+                id: Date.now().toString() + Math.random(),
+                type: shapeType, x, y,
+                color: drawColor, size: brushSize
+            };
+            canvasObjects.push(shape);
+            socket.send(JSON.stringify({ type: 'shape:add', payload: shape }));
+            redrawFgCanvas();
+        }
+
+        function findObjectAt(x, y) {
+            for (let i = canvasObjects.length - 1; i >= 0; i--) {
+                const obj = canvasObjects[i];
+                const w = 150; 
+                const h = 120;
+                const isHit = (x >= obj.x - w/2 && x <= obj.x + w/2 && y >= obj.y - h/2 && y <= obj.y + h/2);
+                if (isHit) return obj;
+            }
+            return null;
+        }
+        
+        function clearAll() {
+             canvasObjects = [];
+             ctxBg.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+             ctxFg.clearRect(0, 0, fgCanvas.width, fgCanvas.height);
+        }
+
+        function setActiveTool(tool) {
+            currentTool = tool;
+            fgCanvas.style.cursor = tool === 'move' ? 'grab' : 'crosshair';
+            toolButtons.forEach(btn => btn.classList.toggle('selected-tool', btn.dataset.tool === tool));
+        }
+
+        toolButtons.forEach(btn => btn.addEventListener('click', () => setActiveTool(btn.dataset.tool)));
+        colorPicker.addEventListener('input', (e) => {
+            drawColor = e.target.value;
+        });
+        brushSizeInput.addEventListener('input', (e) => { brushSize = e.target.value; });
+        clearButton.addEventListener('click', () => {
+            socket.send(JSON.stringify({ type: 'clear' }));
+            clearAll();
+        });
+
+        fgCanvas.addEventListener('mousedown', handleStart);
+        fgCanvas.addEventListener('mousemove', handleMove);
+        fgCanvas.addEventListener('mouseup', handleEnd);
+        fgCanvas.addEventListener('mouseout', handleEnd);
+        fgCanvas.addEventListener('touchstart', handleStart, { passive: false });
+        fgCanvas.addEventListener('touchmove', handleMove, { passive: false });
+        fgCanvas.addEventListener('touchend', handleEnd);
+    </script>
+</body>
+</html>
+
